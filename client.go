@@ -2,9 +2,9 @@
 Package wordgate provides a Go SDK for interacting with the WordGate API.
 
 This SDK provides a simple and convenient way to integrate with WordGate services,
-including order management, product synchronization, and payment processing.
+including order management, product management, membership management, and payment processing.
 
-Basic usage example:
+Basic usage examples:
 
 	// Create a new client
 	client := wordgate.NewClient("your-app-code", "your-app-secret", "https://api.wordgate.example.com")
@@ -30,6 +30,44 @@ Basic usage example:
 	}
 
 	fmt.Printf("Order created: %s\n", order.OrderNo)
+
+	// Create a product
+	product, err := client.CreateProduct(&wordgate.CreateProductRequest{
+		Code:           "PRODUCT001",
+		Name:           "Premium Package",
+		Price:          9900, // $99.00 in cents
+		RequireAddress: false,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create product: %v", err)
+	}
+
+	fmt.Printf("Product created: %s\n", product.Code)
+
+	// Create a membership tier
+	tier, err := client.CreateMembershipTier(&wordgate.CreateMembershipTierRequest{
+		Code:      "PREMIUM",
+		Name:      "Premium Membership",
+		Level:     2,
+		IsDefault: false,
+		Prices: []wordgate.MembershipPriceRequest{
+			{
+				PeriodType:    wordgate.PeriodTypeMonth,
+				Price:         1900, // $19.00 in cents
+				OriginalPrice: 2900, // $29.00 in cents
+			},
+			{
+				PeriodType:    wordgate.PeriodTypeYear,
+				Price:         19900, // $199.00 in cents
+				OriginalPrice: 29900, // $299.00 in cents
+			},
+		},
+	})
+	if err != nil {
+		log.Fatalf("Failed to create membership tier: %v", err)
+	}
+
+	fmt.Printf("Membership tier created: %s\n", tier.Code)
 */
 package wordgate
 
