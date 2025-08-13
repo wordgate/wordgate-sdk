@@ -1,0 +1,205 @@
+/*
+Package wordgate provides a Go SDK for interacting with the WordGate API.
+
+This SDK provides a simple and convenient way to integrate with WordGate services,
+including order management, product synchronization, and payment processing.
+
+Basic usage example:
+
+	// Create a new client
+	client := wordgate.NewClient("your-app-code", "your-app-secret", "https://api.wordgate.example.com")
+
+	// Create an order
+	order, err := client.CreateOrder(&wordgate.CreateOrderRequest{
+		Items: []wordgate.OrderItem{
+			{
+				ItemCode: "PRODUCT001",
+				Quantity: 1,
+				ItemType: "product",
+			},
+		},
+		Customer: wordgate.OrderCustomer{
+			Provider: "email",
+			UID:      "user@example.com",
+		},
+		NotifyURL:   "https://yoursite.com/webhook",
+		RedirectURL: "https://yoursite.com/payment/result",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create order: %v", err)
+	}
+
+	fmt.Printf("Order created: %s\n", order.OrderNo)
+*/
+package wordgate
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+)
+
+// Client represents a WordGate API client
+type Client struct {
+	// AppCode is the application code for authentication
+	AppCode string
+	// AppSecret is the application secret for authentication
+	AppSecret string
+	// BaseURL is the base URL of the WordGate API
+	BaseURL string
+	// HTTPClient is the HTTP client used for requests
+	HTTPClient *http.Client
+}
+
+// APIResponse represents a standard API response wrapper
+type APIResponse struct {
+	Code int         `json:"code"`
+	Data interface{} `json:"data,omitempty"`
+	Msg  string      `json:"msg,omitempty"`
+}
+
+// APIError represents an API error response
+type APIError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+// Error implements the error interface for APIError
+func (e APIError) Error() string {
+	return fmt.Sprintf("API error (code %d): %s", e.Code, e.Message)
+}
+
+// NewClient creates a new WordGate API client
+//
+// appCode: The application code for authentication
+// appSecret: The application secret for authentication
+// baseURL: The base URL of the WordGate API (e.g., "https://api.wordgate.example.com")
+func NewClient(appCode, appSecret, baseURL string) *Client {
+	return &Client{
+		AppCode:   appCode,
+		AppSecret: appSecret,
+		BaseURL:   baseURL,
+		HTTPClient: &http.Client{
+			Timeout: time.Second * 30,
+		},
+	}
+}
+
+// request performs an HTTP request to the API
+//
+// method: HTTP method (GET, POST, etc.)
+// path: API endpoint path
+// body: Request body (will be JSON encoded if not nil)
+func (c *Client) request(method, path string, body interface{}) (*http.Response, error) {
+	var reqBody io.Reader
+
+	// Encode request body as JSON if provided
+	if body != nil {
+		jsonData, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+		reqBody = bytes.NewBuffer(jsonData)
+	}
+
+	// Build full URL
+	url := fmt.Sprintf("%s%s", c.BaseURL, path)
+
+	// Create HTTP request
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	// Set headers
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("X-App-Code", c.AppCode)
+	req.Header.Set("X-App-Secret", c.AppSecret)
+
+	// Send request
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
+	}
+
+	return resp, nil
+}
+
+// requestJSON performs an HTTP request and unmarshals the JSON response
+//
+// method: HTTP method (GET, POST, etc.)
+// path: API endpoint path
+// body: Request body (will be JSON encoded if not nil)
+// result: Pointer to the result structure
+func (c *Client) requestJSON(method, path string, body interface{}, result interface{}) error {
+	resp, err := c.request(method, path, body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check HTTP status code
+	if resp.StatusCode != http.StatusOK {
+		// Try to parse as APIError
+		var apiErr APIError
+		if err := json.Unmarshal(respBody, &apiErr); err == nil && apiErr.Message != "" {
+			return apiErr
+		}
+		// Fallback to HTTP error
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	// Parse API response wrapper
+	var apiResp APIResponse
+	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+		return fmt.Errorf("failed to parse API response: %w", err)
+	}
+
+	// Check API response code
+	if apiResp.Code != 0 {
+		return APIError{
+			Code:    apiResp.Code,
+			Message: apiResp.Msg,
+		}
+	}
+
+	// Marshal and unmarshal data field to target structure
+	if result != nil && apiResp.Data != nil {
+		dataBytes, err := json.Marshal(apiResp.Data)
+		if err != nil {
+			return fmt.Errorf("failed to marshal API data: %w", err)
+		}
+
+		if err := json.Unmarshal(dataBytes, result); err != nil {
+			return fmt.Errorf("failed to unmarshal API data: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// post performs a POST request to the API
+//
+// path: API endpoint path
+// body: Request body
+func (c *Client) post(path string, body interface{}) (*http.Response, error) {
+	return c.request("POST", path, body)
+}
+
+// get performs a GET request to the API
+//
+// path: API endpoint path
+func (c *Client) get(path string) (*http.Response, error) {
+	return c.request("GET", path, nil)
+}
