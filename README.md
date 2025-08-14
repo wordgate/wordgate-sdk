@@ -41,7 +41,6 @@ func main() {
             Provider: "email",
             UID:      "user@example.com",
         },
-        NotifyURL:   "https://yoursite.com/webhook/payment",
         RedirectURL: "https://yoursite.com/payment/result",
     })
     if err != nil {
@@ -103,7 +102,6 @@ order, err := client.CreateOrder(&wordgate.CreateOrderRequest{
         Provider: "email",
         UID:      "user@example.com",
     },
-    NotifyURL:   "https://yoursite.com/webhook/payment",   // Payment notification URL
     RedirectURL: "https://yoursite.com/payment/result",   // Post-payment redirect URL
 })
 
@@ -222,13 +220,14 @@ name := wordgate.GetPeriodTypeName(wordgate.PeriodTypeMonth)      // Returns "Mo
 
 ## URL Configuration
 
-### Notification URL (NotifyURL)
+### Webhook Notifications
 
-The notification URL is used for server-to-server webhook notifications when payment status changes. This should be a complete URL including protocol and domain:
+Webhook notifications for payment events are configured at the application level in your WordGate dashboard, not per-order. This provides better security and centralized management.
 
-```go
-NotifyURL: "https://yoursite.com/api/payment/webhook"
-```
+Configure your webhook endpoint URL in your application settings to receive notifications for:
+- Order payment success
+- Order payment failure  
+- Subscription events
 
 ### Redirect URL (RedirectURL)
 

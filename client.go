@@ -22,7 +22,6 @@ Basic usage examples:
 			Provider: "email",
 			UID:      "user@example.com",
 		},
-		NotifyURL:   "https://yoursite.com/webhook",
 		RedirectURL: "https://yoursite.com/payment/result",
 	})
 	if err != nil {

@@ -35,8 +35,6 @@ type CreateOrderRequest struct {
 	AddressID uint64 `json:"address_id,omitempty"`
 	// Customer contains customer information
 	Customer OrderCustomer `json:"customer"`
-	// NotifyURL is the URL to receive payment notifications (webhook)
-	NotifyURL string `json:"notify_url,omitempty"`
 	// RedirectURL is the URL to redirect after payment completion
 	RedirectURL string `json:"redirect_url,omitempty"`
 }
@@ -101,8 +99,6 @@ type OrderDetailResponse struct {
 	Items []OrderItemInfo `json:"items"`
 	// PayURL is the payment URL
 	PayURL string `json:"pay_url"`
-	// NotifyURL is the payment notification URL
-	NotifyURL string `json:"notify_url"`
 	// RedirectURL is the payment completion redirect URL
 	RedirectURL string `json:"redirect_url"`
 }
