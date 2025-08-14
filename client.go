@@ -105,6 +105,7 @@ type APIError struct {
 	Message string `json:"message"`
 }
 
+
 // Error implements the error interface for APIError
 func (e APIError) Error() string {
 	return fmt.Sprintf("API error (code %d): %s", e.Code, e.Message)
