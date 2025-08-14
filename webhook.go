@@ -14,9 +14,9 @@ Usage example:
 			return
 		}
 		
-		switch webhookEvent.Event {
-		case string(wordgate.WebhookEventOrderPaid):
-			var orderData wordgate.WebhookOrderPaidData
+		switch webhookEvent.EventType {
+		case WebhookEventOrderPaid:
+			var orderData WebhookOrderPaidData
 			if err := webhookEvent.Parse(&orderData); err != nil {
 				http.Error(w, "Failed to parse order data", http.StatusBadRequest)
 				return
@@ -25,8 +25,8 @@ Usage example:
 			// Handle order paid event
 			log.Printf("Order %s paid: %d %s", orderData.WordgateOrderNo, orderData.Amount, orderData.Currency)
 			
-		case string(wordgate.WebhookEventOrderCancelled):
-			var cancelData wordgate.WebhookOrderCancelledData
+		case WebhookEventOrderCancelled:
+			var cancelData WebhookOrderCancelledData
 			if err := webhookEvent.Parse(&cancelData); err != nil {
 				http.Error(w, "Failed to parse cancel data", http.StatusBadRequest)
 				return
@@ -49,8 +49,10 @@ import (
 
 // WebhookEventData webhook事件数据格式
 type WebhookEventData struct {
-	Event string `json:"event"` // 事件类型，如: "order.paid", "order.cancelled" 等
-	Data  any    `json:"data"`  // 事件数据，具体内容取决于事件类型
+	EventType WebhookEventType `json:"event_type"` // 事件类型，如: "order.paid", "order.cancelled" 等
+	AppID     uint64           `json:"app_id"`     // 应用ID
+	Data      any              `json:"data"`       // 事件数据，具体内容取决于事件类型
+	Timestamp int64            `json:"timestamp"`  // 事件时间戳
 }
 
 // Parse 解析事件数据为指定类型
