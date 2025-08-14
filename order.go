@@ -11,32 +11,38 @@ type OrderItem struct {
 	ItemCode string `json:"item_code"`
 	// Quantity is the number of items
 	Quantity int `json:"quantity"`
-	// ItemType is the type of item (product, membership, etc.)
-	ItemType string `json:"item_type,omitempty"`
 }
 
 // OrderCustomer represents customer information for an order
 type OrderCustomer struct {
-	// Provider is the identity provider (email, phone, wechat, etc.)
-	Provider string `json:"provider"`
-	// UID is the unique identifier for the customer
-	UID string `json:"uid"`
+	// UserUID is the user's unique identifier
+	UserUID string `json:"user_uid"`
 }
 
-// CreateOrderRequest represents a request to create an order
-type CreateOrderRequest struct {
-	// Items is the list of order items
+// CreateProductOrderRequest represents a request to create a product order
+type CreateProductOrderRequest struct {
+	// Items is the list of product items
 	Items []OrderItem `json:"items"`
 	// CouponCode is an optional coupon code
 	CouponCode string `json:"coupon_code,omitempty"`
 	// ClientIP is the client's IP address (optional)
 	ClientIP string `json:"client_ip,omitempty"`
-	// AddressID is the shipping address ID (optional)
+	// AddressID is the shipping address ID
+	AddressID uint64 `json:"address_id"`
+}
+
+// CreateMembershipOrderRequest represents a request to create a membership order
+type CreateMembershipOrderRequest struct {
+	// TierID is the membership tier ID
+	TierID uint64 `json:"tier_id"`
+	// PeriodType is the membership period type (month, quarter, year, etc.)
+	PeriodType string `json:"period_type"`
+	// CouponCode is an optional coupon code
+	CouponCode string `json:"coupon_code,omitempty"`
+	// ClientIP is the client's IP address (optional)
+	ClientIP string `json:"client_ip,omitempty"`
+	// AddressID is the shipping address ID (optional for membership orders)
 	AddressID uint64 `json:"address_id,omitempty"`
-	// Customer contains customer information
-	Customer OrderCustomer `json:"customer"`
-	// RedirectURL is the URL to redirect after payment completion
-	RedirectURL string `json:"redirect_url,omitempty"`
 }
 
 // OrderResponse represents the response when creating an order
@@ -57,6 +63,24 @@ type OrderResponse struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
+// OrderSummaryResponse represents the response when creating an app order
+type OrderSummaryResponse struct {
+	// OrderNo is the unique order number
+	OrderNo string `json:"order_no"`
+	// Amount is the total amount in cents
+	Amount int64 `json:"amount"`
+	// Currency is the currency code (e.g., "CNY", "USD")
+	Currency string `json:"currency"`
+	// IsPaid indicates whether the order is paid
+	IsPaid bool `json:"is_paid"`
+	// PaidAt is the payment timestamp (nil if not paid)
+	PaidAt *time.Time `json:"paid_at"`
+	// PayURL is the direct payment URL
+	PayURL string `json:"pay_url"`
+	// RedirectURL is the payment completion redirect URL (optional)
+	RedirectURL string `json:"redirect_url"`
+}
+
 // OrderItemInfo represents detailed information about an order item
 type OrderItemInfo struct {
 	// ItemID is the internal item ID
@@ -69,8 +93,6 @@ type OrderItemInfo struct {
 	UnitPrice int64 `json:"unit_price"`
 	// Subtotal is the subtotal amount in cents
 	Subtotal int64 `json:"subtotal"`
-	// ItemType is the type of item
-	ItemType string `json:"item_type"`
 }
 
 // OrderDetailResponse represents detailed order information
@@ -103,15 +125,28 @@ type OrderDetailResponse struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
-// CreateOrder creates a new order
+// CreateProductOrder creates a new product order
 //
-// request: The order creation request containing items, customer info, and callback URLs
+// request: The product order creation request containing product items and shipping info
 // Returns the created order information and any error
-func (c *Client) CreateOrder(request *CreateOrderRequest) (*OrderResponse, error) {
+func (c *Client) CreateProductOrder(request *CreateProductOrderRequest) (*OrderResponse, error) {
 	var result OrderResponse
-	err := c.requestJSON("POST", "/app/orders/create", request, &result)
+	err := c.requestJSON("POST", "/api/product-orders/create", request, &result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create order: %w", err)
+		return nil, fmt.Errorf("failed to create product order: %w", err)
+	}
+	return &result, nil
+}
+
+// CreateMembershipOrder creates a new membership order
+//
+// request: The membership order creation request containing membership tier and period info
+// Returns the created order information and any error
+func (c *Client) CreateMembershipOrder(request *CreateMembershipOrderRequest) (*OrderResponse, error) {
+	var result OrderResponse
+	err := c.requestJSON("POST", "/api/membership-orders/create", request, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create membership order: %w", err)
 	}
 	return &result, nil
 }
@@ -126,6 +161,38 @@ func (c *Client) GetOrder(orderNo string) (*OrderDetailResponse, error) {
 	err := c.requestJSON("GET", path, nil, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get order: %w", err)
+	}
+	return &result, nil
+}
+
+// CreateAppOrderRequest represents a request to create an order via app admin API
+type CreateAppOrderRequest struct {
+	// Items is the list of product items
+	Items []struct {
+		ItemCode string `json:"item_code"`
+		Quantity int    `json:"quantity"`
+	} `json:"items"`
+	// CouponCode is an optional coupon code
+	CouponCode string `json:"coupon_code,omitempty"`
+	// ClientIP is the client's IP address (optional)
+	ClientIP string `json:"client_ip,omitempty"`
+	// AddressID is the shipping address ID
+	AddressID uint64 `json:"address_id"`
+	// Customer contains customer information
+	Customer OrderCustomer `json:"customer"`
+	// RedirectURL is the payment completion redirect URL (optional)
+	RedirectURL string `json:"redirect_url,omitempty"`
+}
+
+// CreateAppOrder creates a new order using admin API
+//
+// request: The order creation request containing items and customer info
+// Returns the created order information and any error
+func (c *Client) CreateAppOrder(request *CreateAppOrderRequest) (*OrderSummaryResponse, error) {
+	var result OrderSummaryResponse
+	err := c.requestJSON("POST", "/app/orders/create", request, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create app order: %w", err)
 	}
 	return &result, nil
 }

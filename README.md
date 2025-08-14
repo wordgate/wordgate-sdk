@@ -77,6 +77,15 @@ func main() {
 - **Flexible Pricing**: Support for multiple billing periods (monthly, quarterly, yearly, etc.)
 - **Default Tier Management**: Designate default membership levels
 
+### User Management
+
+- **List Users**: Query users with filtering and pagination
+- **Get User Details**: Retrieve comprehensive user information including membership and order history  
+- **Update User Status**: Activate/deactivate user accounts
+- **Set User Membership**: Assign membership tiers with custom expiration dates
+- **Grant Membership**: Convenient methods to grant memberships for specific durations
+- **Extend Membership**: Extend existing user memberships
+
 ## API Reference
 
 ### Client
@@ -198,6 +207,46 @@ err := client.DeleteMembershipTier("PREMIUM")
 
 // Restore a deleted tier
 tier, err := client.RestoreMembershipTier("PREMIUM")
+```
+
+### User Management
+
+```go
+// List users with filtering and pagination
+users, err := client.ListUsers(&wordgate.UserListRequest{
+    Page:           1,
+    Limit:          20,
+    Email:          "user@example.com",  // Filter by email
+    Status:         &[]int{1}[0],        // Filter by status (1=active, 0=disabled)
+    MembershipTier: "PREMIUM",           // Filter by membership tier
+    SortBy:         "created_at",        // Sort by field
+    SortDesc:       true,                // Descending order
+})
+
+// Get detailed user information
+userDetail, err := client.GetUser(12345)
+// Returns user info, membership details, addresses, and recent orders
+
+// Update user status (activate/deactivate)
+err := client.UpdateUserStatus(12345, 1) // 1=active, 0=disabled
+
+// Set user membership with custom expiration
+response, err := client.SetUserMembership(12345, &wordgate.SetUserMembershipRequest{
+    TierCode:  "PREMIUM",
+    StartDate: "2024-01-01",  // Optional, defaults to current date
+    EndDate:   "2024-12-31",  // Required
+    OrderNo:   "ORDER123",    // Optional, for tracking
+})
+
+// Grant membership for specific duration (convenience method)
+response, err := client.GrantUserMembership(12345, "PREMIUM", 30) // 30 days
+
+// Grant membership until specific date
+endDate := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
+response, err := client.GrantUserMembershipUntil(12345, "PREMIUM", endDate)
+
+// Extend existing membership by specific duration
+response, err := client.ExtendUserMembership(12345, "PREMIUM", 30) // Extend by 30 days
 ```
 
 ### Membership Period Types

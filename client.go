@@ -9,26 +9,32 @@ Basic usage examples:
 	// Create a new client
 	client := wordgate.NewClient("your-app-code", "your-app-secret", "https://api.wordgate.example.com")
 
-	// Create an order
-	order, err := client.CreateOrder(&wordgate.CreateOrderRequest{
+	// Create a product order
+	order, err := client.CreateProductOrder(&wordgate.CreateProductOrderRequest{
 		Items: []wordgate.OrderItem{
 			{
 				ItemCode: "PRODUCT001",
 				Quantity: 1,
-				ItemType: "product",
 			},
 		},
-		Customer: wordgate.OrderCustomer{
-			Provider: "email",
-			UID:      "user@example.com",
-		},
-		RedirectURL: "https://yoursite.com/payment/result",
+		AddressID: 1,
 	})
 	if err != nil {
-		log.Fatalf("Failed to create order: %v", err)
+		log.Fatalf("Failed to create product order: %v", err)
 	}
 
-	fmt.Printf("Order created: %s\n", order.OrderNo)
+	fmt.Printf("Product order created: %s\n", order.OrderNo)
+
+	// Create a membership order
+	membershipOrder, err := client.CreateMembershipOrder(&wordgate.CreateMembershipOrderRequest{
+		TierID:     1,
+		PeriodType: "month",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create membership order: %v", err)
+	}
+
+	fmt.Printf("Membership order created: %s\n", membershipOrder.OrderNo)
 
 	// Create a product
 	product, err := client.CreateProduct(&wordgate.CreateProductRequest{
@@ -67,6 +73,46 @@ Basic usage examples:
 	}
 
 	fmt.Printf("Membership tier created: %s\n", tier.Code)
+
+	// List users
+	users, err := client.ListUsers(&wordgate.UserListRequest{
+		Page:  1,
+		Limit: 10,
+	})
+	if err != nil {
+		log.Fatalf("Failed to list users: %v", err)
+	}
+
+	fmt.Printf("Found %d users\n", len(users.Items))
+
+	// Get user details
+	if len(users.Items) > 0 {
+		userDetail, err := client.GetUser(users.Items[0].ID)
+		if err != nil {
+			log.Fatalf("Failed to get user details: %v", err)
+		}
+
+		fmt.Printf("User: %s (UID: %s)\n", userDetail.User.Nickname, userDetail.User.UID)
+
+		// Set user membership
+		membershipResponse, err := client.SetUserMembership(users.Items[0].ID, &wordgate.SetUserMembershipRequest{
+			TierCode: "PREMIUM",
+			EndDate:  "2024-12-31",
+		})
+		if err != nil {
+			log.Fatalf("Failed to set user membership: %v", err)
+		}
+
+		fmt.Printf("User membership set: %s until %s\n", membershipResponse.TierName, membershipResponse.EndDate)
+
+		// Grant membership for 30 days (convenience method)
+		grantResponse, err := client.GrantUserMembership(users.Items[0].ID, "PREMIUM", 30)
+		if err != nil {
+			log.Fatalf("Failed to grant user membership: %v", err)
+		}
+
+		fmt.Printf("User membership granted: %s until %s\n", grantResponse.TierName, grantResponse.EndDate)
+	}
 */
 package wordgate
 
@@ -227,17 +273,3 @@ func (c *Client) requestJSON(method, path string, body interface{}, result inter
 	return nil
 }
 
-// post performs a POST request to the API
-//
-// path: API endpoint path
-// body: Request body
-func (c *Client) post(path string, body interface{}) (*http.Response, error) {
-	return c.request("POST", path, body)
-}
-
-// get performs a GET request to the API
-//
-// path: API endpoint path
-func (c *Client) get(path string) (*http.Response, error) {
-	return c.request("GET", path, nil)
-}

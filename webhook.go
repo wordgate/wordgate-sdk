@@ -13,7 +13,7 @@ Usage example:
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-		
+
 		switch webhookEvent.EventType {
 		case WebhookEventOrderPaid:
 			var orderData WebhookOrderPaidData
@@ -21,19 +21,20 @@ Usage example:
 				http.Error(w, "Failed to parse order data", http.StatusBadRequest)
 				return
 			}
-			
+
 			// Handle order paid event
 			log.Printf("Order %s paid: %d %s", orderData.WordgateOrderNo, orderData.Amount, orderData.Currency)
-			
+
 		case WebhookEventOrderCancelled:
 			var cancelData WebhookOrderCancelledData
 			if err := webhookEvent.Parse(&cancelData); err != nil {
 				http.Error(w, "Failed to parse cancel data", http.StatusBadRequest)
 				return
 			}
-			
+
 			// Handle order cancelled event
 			log.Printf("Order %s cancelled: %s", cancelData.WordgateOrderNo, cancelData.Reason)
+
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -61,66 +62,43 @@ func (w *WebhookEventData) Parse(target any) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal event data: %w", err)
 	}
-	
+
 	return json.Unmarshal(jsonBytes, target)
 }
 
 // WebhookOrderPaidData 订单支付成功事件的数据结构
 type WebhookOrderPaidData struct {
 	WordgateOrderNo string     `json:"wordgate_order_no"` // 订单号
-	Amount          int64      `json:"amount"`             // 订单金额
-	Currency        string     `json:"currency"`           // 货币类型
-	IsPaid          bool       `json:"is_paid"`            // 是否已支付
-	PaidAt          *time.Time `json:"paid_at"`            // 支付时间
-	AppID           uint64     `json:"app_id"`             // 应用ID
+	Amount          int64      `json:"amount"`            // 订单金额
+	Currency        string     `json:"currency"`          // 货币类型
+	IsPaid          bool       `json:"is_paid"`           // 是否已支付
+	PaidAt          *time.Time `json:"paid_at"`           // 支付时间
+	AppID           uint64     `json:"app_id"`            // 应用ID
 }
 
 // WebhookOrderCancelledData 订单取消事件的数据结构
 type WebhookOrderCancelledData struct {
 	WordgateOrderNo string     `json:"wordgate_order_no"` // 订单号
-	Amount          int64      `json:"amount"`             // 订单金额
-	Currency        string     `json:"currency"`           // 货币类型
-	CancelledAt     *time.Time `json:"cancelled_at"`       // 取消时间
-	AppID           uint64     `json:"app_id"`             // 应用ID
-	Reason          string     `json:"reason"`             // 取消原因
+	Amount          int64      `json:"amount"`            // 订单金额
+	Currency        string     `json:"currency"`          // 货币类型
+	CancelledAt     *time.Time `json:"cancelled_at"`      // 取消时间
+	AppID           uint64     `json:"app_id"`            // 应用ID
+	Reason          string     `json:"reason"`            // 取消原因
 }
 
-// WebhookSubscriptionCreatedData 订阅创建事件的数据结构
-type WebhookSubscriptionCreatedData struct {
-	SubscriptionID     string     `json:"subscription_id"`      // 订阅ID
-	WordgateOrderNo    string     `json:"wordgate_order_no"`    // 关联订单号
-	Status             string     `json:"status"`               // 订阅状态
-	BillingCycle       string     `json:"billing_cycle"`        // 计费周期
-	NextBillingDate    *time.Time `json:"next_billing_date"`    // 下次扣费日期
-	Amount             int64      `json:"amount"`               // 订阅金额
-	Currency           string     `json:"currency"`             // 货币类型
-	CreatedAt          time.Time  `json:"created_at"`           // 创建时间
-	AppID              uint64     `json:"app_id"`               // 应用ID
-}
-
-// WebhookSubscriptionUpdatedData 订阅更新事件的数据结构
-type WebhookSubscriptionUpdatedData struct {
-	SubscriptionID     string     `json:"subscription_id"`      // 订阅ID
-	WordgateOrderNo    string     `json:"wordgate_order_no"`    // 关联订单号
-	Status             string     `json:"status"`               // 订阅状态
-	BillingCycle       string     `json:"billing_cycle"`        // 计费周期
-	NextBillingDate    *time.Time `json:"next_billing_date"`    // 下次扣费日期
-	Amount             int64      `json:"amount"`               // 订阅金额
-	Currency           string     `json:"currency"`             // 货币类型
-	UpdatedAt          time.Time  `json:"updated_at"`           // 更新时间
-	AppID              uint64     `json:"app_id"`               // 应用ID
-	Changes            []string   `json:"changes"`              // 变更字段列表
+// WebhookMembershipActivatedData 会员变动事件的数据结构
+type WebhookMembershipActivatedData struct {
+	UserID    uint64 `json:"user_id"`    // 用户ID
+	TierCode  string `json:"tier_code"`  // 会员等级代码
+	ExpiresAt string `json:"expires_at"` // 到期时间 (ISO格式)
+	AppID     uint64 `json:"app_id"`     // 应用ID
 }
 
 // WebhookEventType 定义支持的webhook事件类型常量
 type WebhookEventType string
 
 const (
-	WebhookEventOrderPaid              WebhookEventType = "order.paid"              // 订单支付成功
-	WebhookEventOrderCancelled         WebhookEventType = "order.cancelled"         // 订单取消
-	WebhookEventSubscriptionCreated    WebhookEventType = "subscription.created"    // 订阅创建
-	WebhookEventSubscriptionUpdated    WebhookEventType = "subscription.updated"    // 订阅更新
-	WebhookEventSubscriptionCancelled  WebhookEventType = "subscription.cancelled"  // 订阅取消
-	WebhookEventSubscriptionRenewed    WebhookEventType = "subscription.renewed"    // 订阅续费
+	WebhookEventOrderPaid           WebhookEventType = "order.paid"           // 订单支付成功
+	WebhookEventOrderCancelled      WebhookEventType = "order.cancelled"      // 订单取消
+	WebhookEventMembershipActivated WebhookEventType = "membership.activated" // 会员变动
 )
-
