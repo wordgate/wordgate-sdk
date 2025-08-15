@@ -43,8 +43,13 @@ Usage example:
 package wordgate
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -102,3 +107,96 @@ const (
 	WebhookEventOrderCancelled      WebhookEventType = "order.cancelled"      // 订单取消
 	WebhookEventMembershipActivated WebhookEventType = "membership.activated" // 会员变动
 )
+
+// WebhookSignature webhook签名相关结构体
+type WebhookSignature struct {
+	Timestamp int64  `json:"timestamp"` // 时间戳
+	Signature string `json:"signature"` // HMAC-SHA256签名
+}
+
+// GenerateSignature 生成webhook签名
+// timestamp: Unix时间戳(秒)
+// body: webhook请求体原文
+// secret: 签名密钥
+func GenerateSignature(timestamp int64, body []byte, secret string) string {
+	// 构造待签名消息: <timestamp>.<body>
+	message := strconv.FormatInt(timestamp, 10) + "." + string(body)
+	
+	// 使用HMAC-SHA256生成签名
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(message))
+	signature := hex.EncodeToString(h.Sum(nil))
+	
+	return signature
+}
+
+// GenerateSignatureHeader 生成X-Webhook-Signature header值
+// timestamp: Unix时间戳(秒)
+// body: webhook请求体原文
+// secret: 签名密钥
+func GenerateSignatureHeader(timestamp int64, body []byte, secret string) string {
+	signature := GenerateSignature(timestamp, body, secret)
+	return fmt.Sprintf("t=%d,sha256=%s", timestamp, signature)
+}
+
+// ParseSignatureHeader 解析X-Webhook-Signature header
+// headerValue: X-Webhook-Signature header的值，格式为 "t=<timestamp>,sha256=<signature>"
+func ParseSignatureHeader(headerValue string) (*WebhookSignature, error) {
+	parts := strings.Split(headerValue, ",")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid signature header format")
+	}
+	
+	var timestamp int64
+	var signature string
+	
+	for _, part := range parts {
+		if strings.HasPrefix(part, "t=") {
+			var err error
+			timestamp, err = strconv.ParseInt(strings.TrimPrefix(part, "t="), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid timestamp: %w", err)
+			}
+		} else if strings.HasPrefix(part, "sha256=") {
+			signature = strings.TrimPrefix(part, "sha256=")
+		}
+	}
+	
+	if timestamp == 0 || signature == "" {
+		return nil, fmt.Errorf("missing timestamp or signature")
+	}
+	
+	return &WebhookSignature{
+		Timestamp: timestamp,
+		Signature: signature,
+	}, nil
+}
+
+// VerifySignature 验证webhook签名
+// headerValue: X-Webhook-Signature header的值
+// body: webhook请求体原文
+// secret: 签名密钥
+// maxTimeDiff: 最大时间差(秒)，用于防重放攻击，建议300秒
+func VerifySignature(headerValue string, body []byte, secret string, maxTimeDiff int64) error {
+	// 解析签名header
+	webhookSig, err := ParseSignatureHeader(headerValue)
+	if err != nil {
+		return fmt.Errorf("parse signature header failed: %w", err)
+	}
+	
+	// 检查时间戳，防重放攻击
+	now := time.Now().Unix()
+	if now-webhookSig.Timestamp > maxTimeDiff {
+		return fmt.Errorf("timestamp too old: %d seconds ago", now-webhookSig.Timestamp)
+	}
+	
+	// 生成预期签名
+	expectedSignature := GenerateSignature(webhookSig.Timestamp, body, secret)
+	
+	// 使用常量时间比较，防时序攻击
+	if !hmac.Equal([]byte(webhookSig.Signature), []byte(expectedSignature)) {
+		return fmt.Errorf("signature verification failed")
+	}
+	
+	return nil
+}
