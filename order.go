@@ -19,17 +19,6 @@ type OrderCustomer struct {
 	UserUID string `json:"user_uid"`
 }
 
-// CreateProductOrderRequest represents a request to create a product order
-type CreateProductOrderRequest struct {
-	// Items is the list of product items
-	Items []OrderItem `json:"items"`
-	// CouponCode is an optional coupon code
-	CouponCode string `json:"coupon_code,omitempty"`
-	// ClientIP is the client's IP address (optional)
-	ClientIP string `json:"client_ip,omitempty"`
-	// AddressID is the shipping address ID
-	AddressID uint64 `json:"address_id"`
-}
 
 // CreateMembershipOrderRequest represents a request to create a membership order
 type CreateMembershipOrderRequest struct {
@@ -125,18 +114,6 @@ type OrderDetailResponse struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
-// CreateProductOrder creates a new product order
-//
-// request: The product order creation request containing product items and shipping info
-// Returns the created order information and any error
-func (c *Client) CreateProductOrder(request *CreateProductOrderRequest) (*OrderResponse, error) {
-	var result OrderResponse
-	err := c.requestJSON("POST", "/api/product-orders/create", request, &result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create product order: %w", err)
-	}
-	return &result, nil
-}
 
 // CreateMembershipOrder creates a new membership order
 //
@@ -165,8 +142,8 @@ func (c *Client) GetOrder(orderNo string) (*OrderDetailResponse, error) {
 	return &result, nil
 }
 
-// CreateAppOrderRequest represents a request to create an order via app admin API
-type CreateAppOrderRequest struct {
+// CreateAppProductOrderRequest represents a request to create a product order via app admin API
+type CreateAppProductOrderRequest struct {
 	// Items is the list of product items
 	Items []struct {
 		ItemCode string `json:"item_code"`
@@ -178,21 +155,52 @@ type CreateAppOrderRequest struct {
 	ClientIP string `json:"client_ip,omitempty"`
 	// AddressID is the shipping address ID
 	AddressID uint64 `json:"address_id"`
-	// Customer contains customer information
-	Customer OrderCustomer `json:"customer"`
+	// UserUID is the user's unique identifier
+	UserUID string `json:"user_uid"`
 	// RedirectURL is the payment completion redirect URL (optional)
 	RedirectURL string `json:"redirect_url,omitempty"`
 }
 
-// CreateAppOrder creates a new order using admin API
+// CreateAppMembershipOrderRequest represents a request to create a membership order via app admin API
+type CreateAppMembershipOrderRequest struct {
+	// TierID is the membership tier ID
+	TierID uint64 `json:"tier_id"`
+	// PeriodType is the membership period type (month, quarter, year, etc.)
+	PeriodType string `json:"period_type"`
+	// CouponCode is an optional coupon code
+	CouponCode string `json:"coupon_code,omitempty"`
+	// ClientIP is the client's IP address (optional)
+	ClientIP string `json:"client_ip,omitempty"`
+	// AddressID is the shipping address ID (optional for membership orders)
+	AddressID uint64 `json:"address_id,omitempty"`
+	// UserUID is the user's unique identifier
+	UserUID string `json:"user_uid"`
+	// RedirectURL is the payment completion redirect URL (optional)
+	RedirectURL string `json:"redirect_url,omitempty"`
+}
+
+// CreateAppProductOrder creates a new product order using admin API
 //
-// request: The order creation request containing items and customer info
+// request: The product order creation request containing items and customer info
 // Returns the created order information and any error
-func (c *Client) CreateAppOrder(request *CreateAppOrderRequest) (*OrderSummaryResponse, error) {
+func (c *Client) CreateAppProductOrder(request *CreateAppProductOrderRequest) (*OrderSummaryResponse, error) {
 	var result OrderSummaryResponse
-	err := c.requestJSON("POST", "/app/orders/create", request, &result)
+	err := c.requestJSON("POST", "/app/product-orders/create", request, &result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create app order: %w", err)
+		return nil, fmt.Errorf("failed to create app product order: %w", err)
+	}
+	return &result, nil
+}
+
+// CreateAppMembershipOrder creates a new membership order using admin API
+//
+// request: The membership order creation request containing tier and period info
+// Returns the created order information and any error
+func (c *Client) CreateAppMembershipOrder(request *CreateAppMembershipOrderRequest) (*OrderSummaryResponse, error) {
+	var result OrderSummaryResponse
+	err := c.requestJSON("POST", "/app/membership-orders/create", request, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create app membership order: %w", err)
 	}
 	return &result, nil
 }

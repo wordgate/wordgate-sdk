@@ -92,21 +92,21 @@ type MembershipTier struct {
 // MembershipPriceRequest represents a price request for membership tier operations
 type MembershipPriceRequest struct {
 	// PeriodType is the membership period type
-	PeriodType MembershipPeriodType `json:"period_type"`
+	PeriodType MembershipPeriodType `json:"period_type" binding:"required"`
 	// Price is the discounted price in cents
-	Price int64 `json:"price"`
+	Price int64 `json:"price" binding:"required,min=0"`
 	// OriginalPrice is the original price in cents
-	OriginalPrice int64 `json:"original_price"`
+	OriginalPrice int64 `json:"original_price" binding:"required,min=0"`
 }
 
 // CreateMembershipTierRequest represents a request to create a membership tier
 type CreateMembershipTierRequest struct {
 	// Code is the unique tier code
-	Code string `json:"code"`
+	Code string `json:"code" binding:"required,max=50"`
 	// Name is the tier name
-	Name string `json:"name"`
+	Name string `json:"name" binding:"required,max=100"`
 	// Level is the tier level (higher number = higher tier)
-	Level int `json:"level"`
+	Level int `json:"level" binding:"min=1"`
 	// IsDefault indicates whether this is the default tier
 	IsDefault bool `json:"is_default"`
 	// Prices is the list of pricing options for this tier
@@ -116,9 +116,9 @@ type CreateMembershipTierRequest struct {
 // UpdateMembershipTierRequest represents a request to update a membership tier
 type UpdateMembershipTierRequest struct {
 	// Name is the tier name
-	Name string `json:"name"`
+	Name string `json:"name" binding:"required,max=100"`
 	// Level is the tier level (higher number = higher tier)
-	Level int `json:"level"`
+	Level int `json:"level" binding:"min=1"`
 	// IsDefault indicates whether this is the default tier
 	IsDefault bool `json:"is_default"`
 	// Prices is the list of pricing options for this tier

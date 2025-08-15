@@ -46,11 +46,11 @@ type Product struct {
 // CreateProductRequest represents a request to create a product
 type CreateProductRequest struct {
 	// Code is the unique product code
-	Code string `json:"code"`
+	Code string `json:"code" binding:"required,max=50"`
 	// Name is the product name
-	Name string `json:"name"`
+	Name string `json:"name" binding:"required,max=100"`
 	// Price is the product price in cents
-	Price int64 `json:"price"`
+	Price int64 `json:"price" binding:"required,min=0"`
 	// RequireAddress indicates whether this product requires shipping address
 	RequireAddress bool `json:"require_address"`
 }
@@ -58,9 +58,9 @@ type CreateProductRequest struct {
 // UpdateProductRequest represents a request to update a product
 type UpdateProductRequest struct {
 	// Name is the product name
-	Name string `json:"name"`
+	Name string `json:"name" binding:"required,max=100"`
 	// Price is the product price in cents
-	Price int64 `json:"price"`
+	Price int64 `json:"price" binding:"required,min=0"`
 	// RequireAddress indicates whether this product requires shipping address
 	RequireAddress bool `json:"require_address"`
 }

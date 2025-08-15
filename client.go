@@ -9,24 +9,40 @@ Basic usage examples:
 	// Create a new client
 	client := wordgate.NewClient("your-app-code", "your-app-secret", "https://api.wordgate.example.com")
 
-	// Create a product order
-	order, err := client.CreateProductOrder(&wordgate.CreateProductOrderRequest{
-		Items: []wordgate.OrderItem{
+	// Create an app product order (admin API)
+	productOrder, err := client.CreateAppProductOrder(&wordgate.CreateAppProductOrderRequest{
+		Items: []struct {
+			ItemCode string `json:"item_code"`
+			Quantity int    `json:"quantity"`
+		}{
 			{
 				ItemCode: "PRODUCT001",
 				Quantity: 1,
 			},
 		},
 		AddressID: 1,
+		UserUID:   "user123",
 	})
 	if err != nil {
-		log.Fatalf("Failed to create product order: %v", err)
+		log.Fatalf("Failed to create app product order: %v", err)
 	}
 
-	fmt.Printf("Product order created: %s\n", order.OrderNo)
+	fmt.Printf("App product order created: %s\n", productOrder.OrderNo)
 
-	// Create a membership order
-	membershipOrder, err := client.CreateMembershipOrder(&wordgate.CreateMembershipOrderRequest{
+	// Create an app membership order (admin API)
+	membershipOrder, err := client.CreateAppMembershipOrder(&wordgate.CreateAppMembershipOrderRequest{
+		TierID:     1,
+		PeriodType: "month",
+		UserUID:    "user123",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create app membership order: %v", err)
+	}
+
+	fmt.Printf("App membership order created: %s\n", membershipOrder.OrderNo)
+
+	// Create a membership order (client API)
+	clientMembershipOrder, err := client.CreateMembershipOrder(&wordgate.CreateMembershipOrderRequest{
 		TierID:     1,
 		PeriodType: "month",
 	})
@@ -34,7 +50,7 @@ Basic usage examples:
 		log.Fatalf("Failed to create membership order: %v", err)
 	}
 
-	fmt.Printf("Membership order created: %s\n", membershipOrder.OrderNo)
+	fmt.Printf("Client membership order created: %s\n", clientMembershipOrder.OrderNo)
 
 	// Create a product
 	product, err := client.CreateProduct(&wordgate.CreateProductRequest{
