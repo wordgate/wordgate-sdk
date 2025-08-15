@@ -32,9 +32,6 @@ type OrderSummaryResponse struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
-
-
-
 // CreateAppProductOrderRequest represents a request to create a product order via app admin API
 type CreateAppProductOrderRequest struct {
 	// Items is the list of product items
