@@ -400,6 +400,82 @@ func (c *Client) GrantUserMembershipUntil(userUID string, tierCode string, endDa
 	return c.SetUserMembership(userUID, request)
 }
 
+// AddUserLoginIdentityRequest represents a request to add a login identity to a user
+type AddUserLoginIdentityRequest struct {
+	// Provider is the identity provider (email, phone, username, google, github)
+	Provider string `json:"provider"`
+	// Identity is the identity unique identifier (email, phone number, username, etc.)
+	Identity string `json:"identity"`
+	// Verified indicates if the identity should be marked as verified
+	Verified bool `json:"verified,omitempty"`
+}
+
+// UpdateUserLoginIdentityRequest represents a request to update a user's login identity
+type UpdateUserLoginIdentityRequest struct {
+	// Provider is the identity provider to update
+	Provider string `json:"provider"`
+	// NewIdentity is the new identity value (optional, if empty the identity value won't be changed)
+	NewIdentity string `json:"new_identity,omitempty"`
+	// Verified indicates if the identity should be marked as verified (optional)
+	Verified *bool `json:"verified,omitempty"`
+}
+
+// DeleteUserLoginIdentityRequest represents a request to delete a user's login identity
+type DeleteUserLoginIdentityRequest struct {
+	// Provider is the identity provider to delete
+	Provider string `json:"provider"`
+	// Identity is the identity value to delete (optional, if empty all identities for the provider will be deleted)
+	Identity string `json:"identity,omitempty"`
+}
+
+// AddUserLoginIdentity adds a new login identity to a user
+//
+// userUID: The user UID to add identity to
+// request: The add identity request containing provider and identity information
+// Returns any error encountered during the operation
+func (c *Client) AddUserLoginIdentity(userUID string, request *AddUserLoginIdentityRequest) error {
+	path := fmt.Sprintf("/app/users/%s/login-identities", userUID)
+	
+	var result map[string]interface{}
+	err := c.requestJSON("POST", path, request, &result)
+	if err != nil {
+		return fmt.Errorf("failed to add user login identity: %w", err)
+	}
+	return nil
+}
+
+// UpdateUserLoginIdentity updates an existing login identity for a user
+//
+// userUID: The user UID to update identity for
+// request: The update identity request containing provider and new identity information
+// Returns any error encountered during the operation
+func (c *Client) UpdateUserLoginIdentity(userUID string, request *UpdateUserLoginIdentityRequest) error {
+	path := fmt.Sprintf("/app/users/%s/login-identities", userUID)
+	
+	var result map[string]interface{}
+	err := c.requestJSON("PUT", path, request, &result)
+	if err != nil {
+		return fmt.Errorf("failed to update user login identity: %w", err)
+	}
+	return nil
+}
+
+// DeleteUserLoginIdentity deletes a login identity from a user
+//
+// userUID: The user UID to delete identity from
+// request: The delete identity request containing provider and identity information
+// Returns any error encountered during the operation
+func (c *Client) DeleteUserLoginIdentity(userUID string, request *DeleteUserLoginIdentityRequest) error {
+	path := fmt.Sprintf("/app/users/%s/login-identities", userUID)
+	
+	var result map[string]interface{}
+	err := c.requestJSON("DELETE", path, request, &result)
+	if err != nil {
+		return fmt.Errorf("failed to delete user login identity: %w", err)
+	}
+	return nil
+}
+
 // ExtendUserMembership extends a user's current membership by specified days
 //
 // userUID: The user UID to extend membership for
