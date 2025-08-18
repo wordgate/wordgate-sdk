@@ -49,6 +49,8 @@ type CreateAppProductOrderRequest struct {
 	UserUID string `json:"user_uid"`
 	// RedirectURL is the payment completion redirect URL (optional)
 	RedirectURL string `json:"redirect_url,omitempty"`
+	// NotifyURL is the webhook notification URL (optional, overrides global config)
+	NotifyURL string `json:"notify_url,omitempty"`
 }
 
 // CreateAppMembershipOrderRequest represents a request to create a membership order via app admin API
@@ -67,6 +69,8 @@ type CreateAppMembershipOrderRequest struct {
 	UserUID string `json:"user_uid"`
 	// RedirectURL is the payment completion redirect URL (optional)
 	RedirectURL string `json:"redirect_url,omitempty"`
+	// NotifyURL is the webhook notification URL (optional, overrides global config)
+	NotifyURL string `json:"notify_url,omitempty"`
 }
 
 // CreateAppProductOrder creates a new product order using admin API

@@ -59,6 +59,7 @@ type WebhookEventData struct {
 	AppID     uint64           `json:"app_id"`     // 应用ID
 	Data      any              `json:"data"`       // 事件数据，具体内容取决于事件类型
 	Timestamp int64            `json:"timestamp"`  // 事件时间戳
+	NotifyURL string           `json:"notify_url,omitempty"` // 自定义通知URL（可选，优先于全局配置）
 }
 
 // Parse 解析事件数据为指定类型
