@@ -476,6 +476,32 @@ func (c *Client) DeleteUserLoginIdentity(userUID string, request *DeleteUserLogi
 	return nil
 }
 
+// GetUserLoginIdentitiesResponse represents the response for getting user login identities by provider
+type GetUserLoginIdentitiesResponse struct {
+	// Provider is the identity provider type
+	Provider string `json:"provider"`
+	// Identities is the list of identities for this provider
+	Identities []UserIdentity `json:"identities"`
+	// Count is the total number of identities found
+	Count int `json:"count"`
+}
+
+// GetUserLoginIdentities retrieves login identities for a specific provider
+//
+// userUID: The user UID to get identities for
+// provider: The identity provider type (email, phone, username, google, github)
+// Returns the login identities for the specified provider and any error
+func (c *Client) GetUserLoginIdentities(userUID string, provider string) (*GetUserLoginIdentitiesResponse, error) {
+	path := fmt.Sprintf("/app/users/%s/login-identities/%s", userUID, provider)
+	
+	var result GetUserLoginIdentitiesResponse
+	err := c.requestJSON("GET", path, nil, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user login identities: %w", err)
+	}
+	return &result, nil
+}
+
 // ExtendUserMembership extends a user's current membership by specified days
 //
 // userUID: The user UID to extend membership for
