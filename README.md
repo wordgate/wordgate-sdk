@@ -28,27 +28,37 @@ func main() {
         "https://api.wordgate.example.com", // API 基础URL
     )
     
-    // 创建商品订单
-    productOrder, err := client.CreateAppProductOrder(&wordgate.CreateAppProductOrderRequest{
-        Items: []struct {
-            ItemCode string `json:"item_code"`
-            Quantity int    `json:"quantity"`
-        }{
+    // 创建自定义订单（灵活定价）
+    customOrder, err := client.CreateAppCustomOrder(&wordgate.CreateAppCustomOrderRequest{
+        UserUID:     "user123",
+        Subject:     "自定义套餐订单",
+        Description: "包含多项服务的自定义套餐",
+        Amount:      19900, // 总金额：199.00元（分为单位）
+        Currency:    "CNY",
+        Items: []wordgate.CustomOrderItem{
             {
-                ItemCode: "PRODUCT001",
-                Quantity: 2,
+                ItemCode:    "CUSTOM_SERVICE_A",
+                ItemName:    "自定义服务 A",
+                Quantity:    1,
+                UnitPrice:   9900,  // 99.00元
+                RequireAddress: false,
+            },
+            {
+                ItemCode:    "CUSTOM_SERVICE_B", 
+                ItemName:    "自定义服务 B",
+                Quantity:    1,
+                UnitPrice:   10000, // 100.00元
+                RequireAddress: false,
             },
         },
-        UserUID:     "user123",
-        AddressID:   1,
         RedirectURL: "https://yoursite.com/payment/success",
     })
     if err != nil {
-        log.Fatalf("创建商品订单失败: %v", err)
+        log.Fatalf("创建自定义订单失败: %v", err)
     }
     
-    fmt.Printf("商品订单已创建: %s\n", productOrder.OrderNo)
-    fmt.Printf("支付链接: %s\n", productOrder.PayURL)
+    fmt.Printf("自定义订单已创建: %s\n", customOrder.OrderNo)
+    fmt.Printf("支付链接: %s\n", customOrder.PayURL)
 }
 ```
 
@@ -69,153 +79,72 @@ func main() {
 
 ## 📚 功能模块
 
-### 📦 商品管理
-
-#### 创建商品
-```go
-product, err := client.CreateProduct(&wordgate.CreateProductRequest{
-    Code:           "PREMIUM_PLAN",
-    Name:           "高级会员套餐",
-    Price:          9900,  // 99.00 元（以分为单位）
-    RequireAddress: false, // 数字商品不需要地址
-})
-```
-
-#### 获取商品详情
-```go
-product, err := client.GetProduct("PREMIUM_PLAN")
-```
-
-#### 更新商品
-```go
-product, err := client.UpdateProduct("PREMIUM_PLAN", &wordgate.UpdateProductRequest{
-    Name:           "超级高级会员套餐",
-    Price:          14900, // 149.00 元
-    RequireAddress: false,
-})
-```
-
-#### 商品列表
-```go
-products, err := client.ListProducts(&wordgate.ListProductsRequest{
-    Status:      "active",
-    ShowDeleted: false,
-    Page:        1,
-    Limit:       20,
-})
-```
-
-#### 删除/恢复商品
-```go
-// 软删除
-err := client.DeleteProduct("PREMIUM_PLAN")
-
-// 恢复已删除的商品
-product, err := client.RestoreProduct("PREMIUM_PLAN")
-```
-
-### 💎 会员等级管理
-
-#### 创建会员等级
-```go
-tier, err := client.CreateMembershipTier(&wordgate.CreateMembershipTierRequest{
-    Code:      "VIP",
-    Name:      "VIP 会员",
-    Level:     2,  // 等级数值，越高等级越高
-    IsDefault: false,
-    Prices: []struct {
-        PeriodType    wordgate.MembershipPeriodType `json:"period_type"`
-        Price         int64                         `json:"price"`
-        OriginalPrice int64                         `json:"original_price"`
-    }{
-        {
-            PeriodType:    wordgate.PeriodTypeMonth,
-            Price:         1900,  // 19.00 元/月
-            OriginalPrice: 2900,  // 原价 29.00 元/月
-        },
-        {
-            PeriodType:    wordgate.PeriodTypeYear,
-            Price:         19900, // 199.00 元/年
-            OriginalPrice: 29900, // 原价 299.00 元/年
-        },
-    },
-})
-```
-
-#### 会员等级 CRUD 操作
-```go
-// 获取等级详情
-tier, err := client.GetMembershipTier("VIP")
-
-// 更新等级
-tier, err := client.UpdateMembershipTier("VIP", &wordgate.UpdateMembershipTierRequest{
-    Name:      "至尊 VIP 会员",
-    Level:     3,
-    IsDefault: false,
-    // ... 价格配置
-})
-
-// 列出所有等级
-tiers, err := client.ListMembershipTiers(&wordgate.ListMembershipTiersRequest{
-    Status:      "active",
-    ShowDeleted: false,
-    Page:        1,
-    Limit:       10,
-})
-
-// 删除等级
-err := client.DeleteMembershipTier("VIP")
-
-// 恢复等级
-tier, err := client.RestoreMembershipTier("VIP")
-```
-
-#### 会员周期类型
-```go
-// 可用的周期类型
-wordgate.PeriodTypeMonth     // 月付
-wordgate.PeriodTypeQuarter   // 季付（3个月）
-wordgate.PeriodTypeHalfYear  // 半年付（6个月）
-wordgate.PeriodTypeYear      // 年付
-wordgate.PeriodTypeTwoYear   // 两年付
-wordgate.PeriodTypeThreeYear // 三年付
-wordgate.PeriodTypeFiveYear  // 五年付
-```
-
 ### 📝 订单管理
 
-#### 创建商品订单
+#### 创建自定义订单（推荐）
+自定义订单支持灵活定价，无需预先创建商品或会员等级，适用于各种业务场景：
+
 ```go
-productOrder, err := client.CreateAppProductOrder(&wordgate.CreateAppProductOrderRequest{
-    Items: []struct {
-        ItemCode string `json:"item_code"`
-        Quantity int    `json:"quantity"`
-    }{
+customOrder, err := client.CreateAppCustomOrder(&wordgate.CreateAppCustomOrderRequest{
+    UserUID:     "user123",              // 用户唯一标识（必填）
+    Subject:     "专业服务套餐",           // 订单标题（必填）
+    Description: "包含咨询、开发、部署的完整服务", // 订单描述（可选）
+    Amount:      29900,                  // 总金额：299.00元（必填，单位：分）
+    Currency:    "CNY",                  // 货币类型（可选，默认应用货币）
+    Items: []wordgate.CustomOrderItem{   // 订单项列表（必填）
         {
-            ItemCode: "PREMIUM_PLAN",
-            Quantity: 1,
+            ItemCode:       "CONSULTING",
+            ItemName:       "专业咨询服务",
+            Quantity:       10,         // 10小时
+            UnitPrice:      1000,       // 10.00元/小时
+            RequireAddress: false,      // 数字服务不需要地址
         },
         {
-            ItemCode: "ADDON_SERVICE",
-            Quantity: 2,
+            ItemCode:       "DEVELOPMENT",
+            ItemName:       "系统开发",
+            Quantity:       1,
+            UnitPrice:      19900,      // 199.00元
+            RequireAddress: false,
         },
     },
-    UserUID:     "user123",              // 用户唯一标识
-    AddressID:   1,                      // 收货地址ID（可选）
-    CouponCode:  "DISCOUNT10",           // 优惠券代码（可选）
-    ClientIP:    "192.168.1.100",       // 客户端IP（可选）
-    RedirectURL: "https://yoursite.com/payment/success", // 支付完成重定向URL
+    CouponCode:      "FIRST_ORDER",       // 优惠券代码（可选）
+    ClientIP:        "192.168.1.100",    // 客户端IP（可选）
+    AddressID:       0,                   // 收货地址ID（可选，数字商品可忽略）
+    RedirectURL:     "https://yoursite.com/payment/success", // 支付完成重定向（可选）
+    NotifyURL:       "https://yoursite.com/webhook/payment", // 支付通知URL（可选）
+    RequireAddress:  false,               // 是否需要收货地址
 })
 ```
 
-#### 创建会员订单
+#### 手动标记订单为已付款
+适用于线下支付、银行转账等场景：
+
 ```go
-membershipOrder, err := client.CreateAppMembershipOrder(&wordgate.CreateAppMembershipOrderRequest{
-    TierID:      1,                      // 会员等级ID
-    PeriodType:  "month",                // 周期类型
-    UserUID:     "user123",              // 用户唯一标识
-    CouponCode:  "VIP_DISCOUNT",         // 优惠券（可选）
-    RedirectURL: "https://yoursite.com/membership/success",
+err := client.MarkOrderAsPaid(&wordgate.ManualPaymentRequest{
+    OrderNo:     "WG202401010001",       // 订单号（必填）
+    PaymentNote: "银行转账，转账单号：ABC123456", // 付款说明（必填）
+    Amount:      nil,                     // 付款金额（可选，默认为订单金额）
+})
+```
+
+#### 查询订单详情
+```go
+orderDetail, err := client.GetAppOrder("WG202401010001")
+```
+
+#### 订单列表查询
+```go
+orders, err := client.ListAppOrders(&wordgate.ListOrdersQuery{
+    Page:     1,
+    Limit:    20,
+    Status:   "paid",                    // 筛选已支付订单
+    UserUID:  "user123",                 // 按用户筛选
+    Email:    "user@example.com",        // 按邮箱筛选
+    StartAt:  "2024-01-01",             // 开始日期
+    EndAt:    "2024-01-31",             // 结束日期
+    OrderNo:  "WG2024",                 // 订单号模糊匹配
+    SortBy:   "created_at",             // 排序字段
+    SortDesc: true,                     // 降序排列
 })
 ```
 
@@ -260,26 +189,23 @@ err := client.UpdateUserStatus("user123", 1)
 err := client.UpdateUserStatus("user123", 0)
 ```
 
-#### 会员管理
-```go
-// 设置用户会员资格
-response, err := client.SetUserMembership("user123", &wordgate.SetUserMembershipRequest{
-    TierCode:  "VIP",
-    StartDate: "2024-01-01",  // 可选，默认当前日期
-    EndDate:   "2024-12-31",  // 到期日期
-    OrderNo:   "ORDER123",    // 关联订单号（可选）
-})
+## 🎯 核心特性
 
-// 授予指定天数的会员资格
-response, err := client.GrantUserMembership("user123", "VIP", 30) // 30天
+### ✨ 灵活的自定义订单
+- **无依赖创建**：无需预先创建商品或会员等级
+- **灵活定价**：支持任意金额和商品项组合
+- **完整验证**：自动验证金额一致性，防止数据错误
+- **支付兼容**：完全兼容 Stripe 支付提供商
 
-// 授予会员资格至指定日期
-endDate := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
-response, err := client.GrantUserMembershipUntil("user123", "VIP", endDate)
+### 🔒 安全的手动付款
+- **管理员专用**：使用 App Secret 认证的管理接口
+- **详细记录**：必须提供付款说明和相关信息
+- **金额校验**：可选择验证付款金额是否与订单一致
 
-// 延长现有会员资格
-response, err := client.ExtendUserMembership("user123", "VIP", 30) // 延长30天
-```
+### 📊 完整的订单管理
+- **详细查询**：获取订单完整信息，包含用户、商品项、支付记录
+- **灵活筛选**：支持多维度筛选和排序
+- **实时状态**：准确反映订单和支付状态
 
 ## 🛠️ 错误处理
 
@@ -313,11 +239,11 @@ if err != nil {
 
 ### 常见错误场景
 ```go
-// 处理商品代码重复
-product, err := client.CreateProduct(request)
+// 处理订单金额不一致
+customOrder, err := client.CreateAppCustomOrder(request)
 if err != nil {
-    if apiErr, ok := err.(wordgate.APIError); ok && apiErr.Code == 409 {
-        fmt.Println("商品代码已存在，请使用其他代码")
+    if apiErr, ok := err.(wordgate.APIError); ok && apiErr.Code == 400 {
+        fmt.Println("订单金额与商品项总额不一致，请检查金额计算")
         return
     }
 }
@@ -327,6 +253,15 @@ userDetail, err := client.GetUser("nonexistent")
 if err != nil {
     if apiErr, ok := err.(wordgate.APIError); ok && apiErr.Code == 404 {
         fmt.Println("用户不存在")
+        return
+    }
+}
+
+// 处理订单已支付
+err := client.MarkOrderAsPaid(request)
+if err != nil {
+    if apiErr, ok := err.(wordgate.APIError); ok && apiErr.Code == 409 {
+        fmt.Println("订单已经支付，无需重复标记")
         return
     }
 }
@@ -346,8 +281,9 @@ if err != nil {
    - HTTPS 连接（生产环境必需）
 
 3. **支付配置**
-   - 已配置支付提供商（Stripe、Antom 等）
+   - 已配置 Stripe 支付提供商
    - 正确的 Webhook 端点设置
+   - 自定义订单无需预配置商品或价格
 
 ### 安全注意事项
 ```go

@@ -32,72 +32,6 @@ type OrderSummaryResponse struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
-// CreateAppProductOrderRequest represents a request to create a product order via app admin API
-type CreateAppProductOrderRequest struct {
-	// Items is the list of product items
-	Items []struct {
-		ItemCode string `json:"item_code"`
-		Quantity int    `json:"quantity"`
-	} `json:"items"`
-	// CouponCode is an optional coupon code
-	CouponCode string `json:"coupon_code,omitempty"`
-	// ClientIP is the client's IP address (optional)
-	ClientIP string `json:"client_ip,omitempty"`
-	// AddressID is the shipping address ID
-	AddressID uint64 `json:"address_id"`
-	// UserUID is the user's unique identifier
-	UserUID string `json:"user_uid"`
-	// RedirectURL is the payment completion redirect URL (optional)
-	RedirectURL string `json:"redirect_url,omitempty"`
-	// NotifyURL is the webhook notification URL (optional, overrides global config)
-	NotifyURL string `json:"notify_url,omitempty"`
-}
-
-// CreateAppMembershipOrderRequest represents a request to create a membership order via app admin API
-type CreateAppMembershipOrderRequest struct {
-	// TierID is the membership tier ID
-	TierID uint64 `json:"tier_id"`
-	// PeriodType is the membership period type (month, quarter, year, etc.)
-	PeriodType string `json:"period_type"`
-	// CouponCode is an optional coupon code
-	CouponCode string `json:"coupon_code,omitempty"`
-	// ClientIP is the client's IP address (optional)
-	ClientIP string `json:"client_ip,omitempty"`
-	// AddressID is the shipping address ID (optional for membership orders)
-	AddressID uint64 `json:"address_id,omitempty"`
-	// UserUID is the user's unique identifier
-	UserUID string `json:"user_uid"`
-	// RedirectURL is the payment completion redirect URL (optional)
-	RedirectURL string `json:"redirect_url,omitempty"`
-	// NotifyURL is the webhook notification URL (optional, overrides global config)
-	NotifyURL string `json:"notify_url,omitempty"`
-}
-
-// CreateAppProductOrder creates a new product order using admin API
-//
-// request: The product order creation request containing items and customer info
-// Returns the created order information and any error
-func (c *Client) CreateAppProductOrder(request *CreateAppProductOrderRequest) (*OrderSummaryResponse, error) {
-	var result OrderSummaryResponse
-	err := c.requestJSON("POST", "/app/product-orders/create", request, &result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create app product order: %w", err)
-	}
-	return &result, nil
-}
-
-// CreateAppMembershipOrder creates a new membership order using admin API
-//
-// request: The membership order creation request containing tier and period info
-// Returns the created order information and any error
-func (c *Client) CreateAppMembershipOrder(request *CreateAppMembershipOrderRequest) (*OrderSummaryResponse, error) {
-	var result OrderSummaryResponse
-	err := c.requestJSON("POST", "/app/membership-orders/create", request, &result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create app membership order: %w", err)
-	}
-	return &result, nil
-}
 
 // ListOrdersQuery represents query parameters for listing orders
 type ListOrdersQuery struct {
@@ -295,6 +229,61 @@ func (c *Client) ListAppOrders(query *ListOrdersQuery) (*ListResult, error) {
 	err := c.requestJSON("GET", "/app/orders", query, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list app orders: %w", err)
+	}
+	return &result, nil
+}
+
+// CustomOrderItem represents a custom order item with flexible pricing
+type CustomOrderItem struct {
+	// ItemCode is the product/item code (can be custom defined)
+	ItemCode string `json:"item_code"`
+	// ItemName is the product name (required)
+	ItemName string `json:"item_name"`
+	// Quantity is the number of items (required)
+	Quantity int `json:"quantity"`
+	// UnitPrice is the unit price in cents (required)
+	UnitPrice int64 `json:"unit_price"`
+	// RequireAddress indicates if this item requires shipping address
+	RequireAddress bool `json:"require_address"`
+}
+
+// CreateAppCustomOrderRequest represents a request to create a custom order with flexible pricing
+type CreateAppCustomOrderRequest struct {
+	// UserUID is the user's unique identifier (required)
+	UserUID string `json:"user_uid"`
+	// Subject is the order title (required)
+	Subject string `json:"subject"`
+	// Description is the order description (optional)
+	Description string `json:"description,omitempty"`
+	// Amount is the total amount in cents (required)
+	Amount int64 `json:"amount"`
+	// Currency is the currency code (optional, defaults to app currency)
+	Currency string `json:"currency,omitempty"`
+	// Items is the list of custom order items (required)
+	Items []CustomOrderItem `json:"items"`
+	// CouponCode is an optional coupon code
+	CouponCode string `json:"coupon_code,omitempty"`
+	// ClientIP is the client's IP address (optional)
+	ClientIP string `json:"client_ip,omitempty"`
+	// AddressID is the shipping address ID (optional)
+	AddressID uint64 `json:"address_id,omitempty"`
+	// RedirectURL is the payment completion redirect URL (optional)
+	RedirectURL string `json:"redirect_url,omitempty"`
+	// NotifyURL is the webhook notification URL (optional, overrides global config)
+	NotifyURL string `json:"notify_url,omitempty"`
+	// RequireAddress indicates if the order requires shipping address
+	RequireAddress bool `json:"require_address"`
+}
+
+// CreateAppCustomOrder creates a new custom order with flexible pricing using admin API
+//
+// request: The custom order creation request containing items and pricing info
+// Returns the created order information and any error
+func (c *Client) CreateAppCustomOrder(request *CreateAppCustomOrderRequest) (*OrderSummaryResponse, error) {
+	var result OrderSummaryResponse
+	err := c.requestJSON("POST", "/app/custom-orders/create", request, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create app custom order: %w", err)
 	}
 	return &result, nil
 }

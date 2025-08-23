@@ -69,7 +69,7 @@ type UserListResponse struct {
 	// Items is the list of users
 	Items []User `json:"items"`
 	// Pagination contains pagination information
-	Pagination PaginationInfo `json:"pagination"`
+	Pagination Pagination `json:"pagination"`
 }
 
 // UserDetail represents detailed user information
@@ -175,7 +175,7 @@ type UserOrderList struct {
 	// Items is the list of orders
 	Items []UserOrder `json:"items"`
 	// Pagination contains pagination information
-	Pagination PaginationInfo `json:"pagination"`
+	Pagination Pagination `json:"pagination"`
 }
 
 // UserOrder represents a user's order
