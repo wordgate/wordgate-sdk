@@ -5,14 +5,31 @@ import (
 	"time"
 )
 
-// OrderItem represents an item in an order
-type OrderItem struct {
+// OrderItemRequest represents an item in an order request
+type OrderItemRequest struct {
 	// ItemCode is the product/item code
 	ItemCode string `json:"item_code"`
 	// Quantity is the number of items
 	Quantity int `json:"quantity"`
 }
 
+// CreateProductOrderRequest represents a request to create a product order
+type CreateProductOrderRequest struct {
+	// Items is the list of order items (required)
+	Items []OrderItemRequest `json:"items"`
+	// CouponCode is an optional coupon code
+	CouponCode string `json:"coupon_code,omitempty"`
+	// ClientIP is the client's IP address (optional)
+	ClientIP string `json:"client_ip,omitempty"`
+	// AddressID is the shipping address ID (optional)
+	AddressID uint64 `json:"address_id,omitempty"`
+	// UserUID is the user's unique identifier (optional, only for admin API)
+	UserUID string `json:"user_uid,omitempty"`
+	// RedirectURL is the payment completion redirect URL (optional)
+	RedirectURL string `json:"redirect_url,omitempty"`
+	// NotifyURL is the webhook notification URL (optional, overrides global config)
+	NotifyURL string `json:"notify_url,omitempty"`
+}
 
 // OrderSummaryResponse represents the response when creating an app order
 type OrderSummaryResponse struct {
