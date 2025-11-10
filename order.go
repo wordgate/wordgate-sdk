@@ -164,7 +164,31 @@ type OrderDetailResponse struct {
 	User interface{} `json:"user,omitempty"`
 }
 
-// OrderListItem represents an order item in the list
+// OrderBrief represents brief order information (for user-facing API)
+type OrderBrief struct {
+	// OrderNo is the unique order number
+	OrderNo string `json:"order_no"`
+	// Amount is the total amount in cents
+	Amount int64 `json:"amount"`
+	// Currency is the currency code
+	Currency string `json:"currency"`
+	// CreatedAt is the creation timestamp
+	CreatedAt string `json:"created_at"`
+	// IsPaid indicates whether the order is paid
+	IsPaid bool `json:"is_paid"`
+	// PaidAt is the payment timestamp (nil if not paid)
+	PaidAt *string `json:"paid_at"`
+	// CouponCode is the applied coupon code
+	CouponCode string `json:"coupon_code"`
+	// DiscountAmount is the discount amount in cents
+	DiscountAmount int64 `json:"discount_amount"`
+	// Items is the list of order items
+	Items []OrderItemInfo `json:"items"`
+	// PayURL is the direct payment URL
+	PayURL string `json:"pay_url"`
+}
+
+// OrderListItem represents an order item in the list (for admin API)
 type OrderListItem struct {
 	// ID is the order database ID
 	ID uint64 `json:"id"`
