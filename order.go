@@ -197,23 +197,15 @@ type Pagination struct {
 	TotalPages int `json:"total_pages"`
 }
 
-// ManualPaymentRequest represents a request to manually mark order as paid
-type ManualPaymentRequest struct {
-	// OrderNo is the order number
-	OrderNo string `json:"order_no"`
-	// PaymentNote is the payment note (required)
-	PaymentNote string `json:"payment_note"`
-	// Amount is the payment amount in cents (optional, defaults to order amount)
-	Amount *int64 `json:"amount,omitempty"`
-}
 
 // GetAppOrder retrieves detailed order information by order number
-//
+// 
+// This method uses user impersonation when X-App-As-User-Id header is set
 // orderNo: The order number to retrieve
 // Returns the detailed order information and any error
 func (c *Client) GetAppOrder(orderNo string) (*OrderDetailResponse, error) {
 	var result OrderDetailResponse
-	err := c.requestJSON("GET", "/app/orders/"+orderNo, nil, &result)
+	err := c.requestJSON("GET", "/api/orders/"+orderNo, nil, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get app order: %w", err)
 	}
@@ -222,11 +214,12 @@ func (c *Client) GetAppOrder(orderNo string) (*OrderDetailResponse, error) {
 
 // ListAppOrders retrieves a paginated list of orders with optional filtering
 //
-// query: The query parameters for filtering and pagination
+// This method uses user impersonation when X-App-As-User-Id header is set
+// query: The query parameters for filtering and pagination  
 // Returns the order list result and any error
 func (c *Client) ListAppOrders(query *ListOrdersQuery) (*ListResult, error) {
 	var result ListResult
-	err := c.requestJSON("GET", "/app/orders", query, &result)
+	err := c.requestJSON("GET", "/api/orders", query, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list app orders: %w", err)
 	}
@@ -275,28 +268,17 @@ type CreateAppCustomOrderRequest struct {
 	RequireAddress bool `json:"require_address"`
 }
 
-// CreateAppCustomOrder creates a new custom order with flexible pricing using admin API
+// CreateAppCustomOrder creates a new custom order with flexible pricing using user API
 //
+// This method uses user impersonation when X-App-As-User-Id header is set
 // request: The custom order creation request containing items and pricing info
 // Returns the created order information and any error
 func (c *Client) CreateAppCustomOrder(request *CreateAppCustomOrderRequest) (*OrderSummaryResponse, error) {
 	var result OrderSummaryResponse
-	err := c.requestJSON("POST", "/app/custom-orders/create", request, &result)
+	err := c.requestJSON("POST", "/api/custom-orders/create", request, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create app custom order: %w", err)
 	}
 	return &result, nil
 }
 
-// MarkOrderAsPaid manually marks an order as paid
-//
-// request: The manual payment request containing order number and payment note
-// Returns any error
-func (c *Client) MarkOrderAsPaid(request *ManualPaymentRequest) error {
-	var result interface{}
-	err := c.requestJSON("POST", "/app/orders/mark_as_paid", request, &result)
-	if err != nil {
-		return fmt.Errorf("failed to mark order as paid: %w", err)
-	}
-	return nil
-}
